@@ -1,19 +1,17 @@
 <?php
 
-require_once("vendor/autoload.php");
+require_once 'vendor' . DIRECTORY_SEPARATOR . 'autoload.php';
 
-$app = new \Slim\Slim();
+use \Slim\Slim;
+use \Hcode\Page;
+
+$app = new Slim();
 
 $app->config('debug', true);
 
 $app->get('/', function() {
-
-	$sql = new \Hcode\DB\Sql();
-
-	$result = $sql->select('SELECT * FROM tb_users');
-
-	echo json_encode($result, JSON_PRETTY_PRINT);
-
+	$page = new Page();
+	$page->setTpl('index');
 });
 
 $app->run();
