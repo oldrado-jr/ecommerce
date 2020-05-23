@@ -3,4 +3,4 @@ composer.json
 composer.lock
 views-cache/
 res/admin
-res/site/img/products/
+res/site/img/
