@@ -3,10 +3,11 @@ session_start();
 
 require_once 'vendor' . DIRECTORY_SEPARATOR . 'autoload.php';
 
+use Hcode\Model\Category;
 use Hcode\Model\User;
-use \Slim\Slim;
-use \Hcode\Page;
-use \Hcode\PageAdmin;
+use Slim\Slim;
+use Hcode\Page;
+use Hcode\PageAdmin;
 
 $app = new Slim();
 
@@ -45,9 +46,8 @@ $app->get('/admin/logout', function () {
 
 $app->get('/admin/users', function () {
 	User::verifyLogin();
-	$users = User::listAll();
 	$page = new PageAdmin();
-	$page->setTpl('users', ['users' => $users]);
+	$page->setTpl('users', ['users' => User::listAll()]);
 });
 
 $app->get('/admin/users/create', function () {
@@ -117,8 +117,7 @@ $app->get('/admin/forgot', function () {
 });
 
 $app->post('/admin/forgot', function () {
-	$user = User::getForgot($_POST['email']);
-
+	User::getForgot($_POST['email']);
 	header('Location: /admin/forgot/sent');
 	exit;
 });
@@ -155,6 +154,62 @@ $app->post('/admin/forgot/reset', function () {
 		'footer' => false
 	]);
 	$page->setTpl('forgot-reset-success');
+});
+
+$app->get('/admin/categories', function () {
+	User::verifyLogin();
+	$page = new PageAdmin();
+	$page->setTpl('categories', ['categories' => Category::listAll()]);
+});
+
+$app->get('/admin/categories/create', function () {
+	User::verifyLogin();
+	$page = new PageAdmin();
+	$page->setTpl('categories-create');
+});
+
+$app->post('/admin/categories/create', function () {
+	User::verifyLogin();
+
+	$category = new Category();
+	$category->setData($_POST);
+	$category->save();
+
+	header('Location: /admin/categories');
+	exit;
+});
+
+$app->get('/admin/categories/:idcategory/delete', function ($idCategory) {
+	User::verifyLogin();
+
+	$category = new Category();
+	$category->get($idCategory);
+	$category->delete();
+
+	header('Location: /admin/categories');
+	exit;
+});
+
+$app->get('/admin/categories/:idcategory', function ($idCategory) {
+	User::verifyLogin();
+
+	$category = new Category();
+	$category->get($idCategory);
+
+	$page = new PageAdmin();
+	$page->setTpl('categories-update', ['category' => $category->getValues()]);
+});
+
+$app->post('/admin/categories/:idcategory', function ($idCategory) {
+	User::verifyLogin();
+
+	$category = new Category();
+	$category->get($idCategory);
+	$category->setData($_POST);
+	$category->save();
+
+	header('Location: /admin/categories');
+	exit;
 });
 
 $app->run();
