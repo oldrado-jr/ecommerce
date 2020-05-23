@@ -2,7 +2,6 @@
 
 use Hcode\Model\Category;
 use Hcode\Model\User;
-use Hcode\Page;
 use Hcode\PageAdmin;
 
 $app->get('/admin/categories', function () {
@@ -59,14 +58,4 @@ $app->post('/admin/categories/:idcategory', function ($idCategory) {
 
 	header('Location: /admin/categories');
 	exit;
-});
-
-$app->get('/categories/:idcategory', function ($idCategory) {
-	$category = new Category();
-	$category->get($idCategory);
-	$page = new Page();
-	$page->setTpl('category', [
-		'category' => $category->getValues(),
-		'products' => []
-	]);
 });
