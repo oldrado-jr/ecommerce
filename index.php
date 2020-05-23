@@ -9,6 +9,7 @@ $app = new Slim();
 
 $app->config('debug', true);
 
+require_once 'util' . DIRECTORY_SEPARATOR . 'functions.php';
 require_once 'routes' . DIRECTORY_SEPARATOR . 'site.php';
 require_once 'routes' . DIRECTORY_SEPARATOR . 'admin-users.php';
 require_once 'routes' . DIRECTORY_SEPARATOR . 'admin-forgot.php';
