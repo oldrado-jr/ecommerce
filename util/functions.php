@@ -1,5 +1,5 @@
 <?php
 
 function formatPrice($vlprice) {
-    return number_format($vlprice, 2, ',', '.');
+    return 'R$ ' . number_format($vlprice, 2, ',', '.');
 }
