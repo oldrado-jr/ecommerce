@@ -3,6 +3,10 @@
 use Hcode\Model\User;
 
 function formatPrice($vlprice) {
+    if (!is_numeric($vlprice) || $vlprice < 0) {
+        $vlprice = 0;
+    }
+
     return 'R$ ' . number_format($vlprice, 2, ',', '.');
 }
 
