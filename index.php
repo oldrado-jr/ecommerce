@@ -18,6 +18,7 @@ require_once SITE_ROUTE . 'site-cart.php';
 require_once SITE_ROUTE . 'site-users.php';
 require_once SITE_ROUTE . 'site-forgot.php';
 require_once SITE_ROUTE . 'site-profile.php';
+require_once SITE_ROUTE . 'site-checkout.php';
 require_once ADMIN_ROUTE . 'admin-users.php';
 require_once ADMIN_ROUTE . 'admin-forgot.php';
 require_once ADMIN_ROUTE . 'admin-categories.php';

@@ -1,10 +1,7 @@
 <?php
 
-use Hcode\Model\Address;
-use Hcode\Model\Cart;
 use Hcode\Model\Category;
 use Hcode\Model\Product;
-use Hcode\Model\User;
 use Hcode\Page;
 
 $app->get('/', function () {
@@ -44,18 +41,5 @@ $app->get('/products/:desurl', function ($desurl) {
 	$page->setTpl('product-detail', [
 		'product' => $product->getValues(),
 		'categories' => $product->getCategories()
-	]);
-});
-
-$app->get('/checkout', function () {
-	User::verifyLogin(false);
-
-	$cart = Cart::getFromSession();
-	$address = new Address();
-
-	$page = new Page();
-	$page->setTpl('checkout', [
-		'cart' => $cart->getValues(),
-		'address' => $address->getValues()
 	]);
 });
