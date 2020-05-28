@@ -1,5 +1,7 @@
 <?php
 
+use Hcode\Model\Cart;
+use Hcode\Model\Order;
 use Hcode\Model\User;
 use Hcode\Page;
 
@@ -42,4 +44,29 @@ $app->post('/profile', function () {
 
     header('Location: /profile');
     exit;
+});
+
+$app->get('/profile/orders', function () {
+    User::verifyLogin(false);
+    $user = User::getFromSession();
+    $page = new Page();
+    $page->setTpl('profile-orders', [
+        'orders' => $user->getOrders()
+    ]);
+});
+
+$app->get('/profile/orders/:idorder', function ($idOrder) {
+    User::verifyLogin(false);
+    $order = new Order();
+    $order->get($idOrder);
+
+    $cart = new Cart();
+    $cart->get($order->getIdcart());
+
+    $page = new Page();
+    $page->setTpl('profile-orders-detail', [
+        'order' => $order->getValues(),
+        'products' => $cart->getProducts(),
+        'cart' => $cart->getValues()
+    ]);
 });

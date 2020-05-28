@@ -68,22 +68,19 @@ $app->post('/checkout', function () {
     $_POST['deszipcode'] = $_POST['zipcode'];
     $_POST['idperson'] = $user->getIdperson();
 
-    // echo '<pre>';
-    // var_dump($_POST['idperson']);
-    // exit;
-
     $address->setData($_POST);
     $address->save();
 
     $cart = Cart::getFromSession();
-    $totals = $cart->getCalculateTotal();
+    $cart->getCalculateTotal();
+
     $order = new Order();
     $order->setData([
         'idcart' => $cart->getIdcart(),
         'idaddress' => $address->getIdaddress(),
         'iduser' => $user->getIduser(),
         'idstatus' => OrderStatus::EM_ABERTO,
-        'vltotal' => $totals['vlprice'] + $cart->getVlfreight()
+        'vltotal' => $cart->getVltotal()
     ]);
     $order->save();
 
