@@ -14,17 +14,17 @@ define('ADMIN_ROUTE', 'routes' . DIRECTORY_SEPARATOR . 'admin' . DIRECTORY_SEPAR
 
 require_once 'util' . DIRECTORY_SEPARATOR . 'functions.php';
 require_once SITE_ROUTE . 'site.php';
-require_once SITE_ROUTE . 'site-cart.php';
-require_once SITE_ROUTE . 'site-users.php';
-require_once SITE_ROUTE . 'site-forgot.php';
-require_once SITE_ROUTE . 'site-profile.php';
-require_once SITE_ROUTE . 'site-checkout.php';
-require_once SITE_ROUTE . 'site-order.php';
-require_once SITE_ROUTE . 'site-boleto.php';
-require_once ADMIN_ROUTE . 'admin-users.php';
-require_once ADMIN_ROUTE . 'admin-forgot.php';
-require_once ADMIN_ROUTE . 'admin-categories.php';
-require_once ADMIN_ROUTE . 'admin-categories-products.php';
-require_once ADMIN_ROUTE . 'admin-products.php';
+require_once SITE_ROUTE . 'cart.php';
+require_once SITE_ROUTE . 'users.php';
+require_once SITE_ROUTE . 'forgot.php';
+require_once SITE_ROUTE . 'profile.php';
+require_once SITE_ROUTE . 'checkout.php';
+require_once SITE_ROUTE . 'order.php';
+require_once SITE_ROUTE . 'boleto.php';
+require_once ADMIN_ROUTE . 'users.php';
+require_once ADMIN_ROUTE . 'forgot.php';
+require_once ADMIN_ROUTE . 'categories.php';
+require_once ADMIN_ROUTE . 'categories-products.php';
+require_once ADMIN_ROUTE . 'products.php';
 
 $app->run();
