@@ -2,6 +2,8 @@
 
 use Hcode\Model\Address;
 use Hcode\Model\Cart;
+use Hcode\Model\Order;
+use Hcode\Model\OrderStatus;
 use Hcode\Model\User;
 use Hcode\Page;
 
@@ -43,6 +45,10 @@ $app->post('/checkout', function () {
     $errors = [];
 
     foreach ($_POST as $key => &$value) {
+        if ('shipping_method' == $key || 'woocommerce_checkout_place_order' == $key || 'descomplement' == $key) {
+            continue;
+        }
+
         $value = htmlentities(trim(strip_tags($value)), ENT_QUOTES);
 
         if (empty($value)) {
@@ -62,9 +68,25 @@ $app->post('/checkout', function () {
     $_POST['deszipcode'] = $_POST['zipcode'];
     $_POST['idperson'] = $user->getIdperson();
 
-    $address->save();
-    $address->setData($_POST);
+    // echo '<pre>';
+    // var_dump($_POST['idperson']);
+    // exit;
 
-    header('Location: /order');
+    $address->setData($_POST);
+    $address->save();
+
+    $cart = Cart::getFromSession();
+    $totals = $cart->getCalculateTotal();
+    $order = new Order();
+    $order->setData([
+        'idcart' => $cart->getIdcart(),
+        'idaddress' => $address->getIdaddress(),
+        'iduser' => $user->getIduser(),
+        'idstatus' => OrderStatus::EM_ABERTO,
+        'vltotal' => $totals['vlprice'] + $cart->getVlfreight()
+    ]);
+    $order->save();
+
+    header('Location: /order/' . $order->getIdorder());
     exit;
 });

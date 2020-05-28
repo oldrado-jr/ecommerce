@@ -2,12 +2,14 @@
 
 use Hcode\Model\User;
 
-function formatPrice($vlprice) {
+function formatPrice($vlprice, $currency = true) {
     if (!is_numeric($vlprice) || $vlprice < 0) {
         $vlprice = 0;
     }
 
-    return 'R$ ' . number_format($vlprice, 2, ',', '.');
+    $formattedValue = number_format($vlprice, 2, ',', '');
+
+    return ($currency) ? 'R$ ' . $formattedValue : $formattedValue;
 }
 
 function checkLogin($inAdmin = true) {
