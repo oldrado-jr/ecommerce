@@ -36,8 +36,28 @@ $app->get('/admin/logout', function () {
 
 $app->get('/admin/users', function () {
 	User::verifyLogin();
+
+	$search = (isset($_GET['search'])) ? htmlentities(trim(strip_tags($_GET['search'])), ENT_QUOTES) : '';
+	$page = (isset($_GET['page'])) ? (int) $_GET['page'] : 1;
+	$pagination = User::getPageSearch($search, $page);
+	$pages = [];
+
+	for ($i = 1; $i <= $pagination['pages']; $i++) {
+		$pages[] = [
+			'href' => '/admin/users?' . http_build_query([
+				'page' => $i,
+				'search' => $search
+			]),
+			'text' => $i
+		];
+	}
+
 	$page = new PageAdmin();
-	$page->setTpl('users', ['users' => User::listAll()]);
+	$page->setTpl('users', [
+		'users' => $pagination['data'],
+		'search' => $search,
+		'pages' => $pages
+	]);
 });
 
 $app->get('/admin/users/create', function () {
