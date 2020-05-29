@@ -13,6 +13,10 @@ function formatPrice($vlprice, $currency = true) {
     return ($currency) ? 'R$ ' . $formattedValue : $formattedValue;
 }
 
+function formatDate($date) {
+    return date('d/m/Y', strtotime($date));
+}
+
 function checkLogin($inAdmin = true) {
     return User::checkLogin($inAdmin);
 }

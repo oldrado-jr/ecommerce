@@ -26,5 +26,6 @@ require_once ADMIN_ROUTE . 'forgot.php';
 require_once ADMIN_ROUTE . 'categories.php';
 require_once ADMIN_ROUTE . 'categories-products.php';
 require_once ADMIN_ROUTE . 'products.php';
+require_once ADMIN_ROUTE . 'orders.php';
 
 $app->run();
