@@ -6,8 +6,28 @@ use Hcode\PageAdmin;
 
 $app->get('/admin/categories', function () {
 	User::verifyLogin();
+
+	$search = (isset($_GET['search'])) ? htmlentities(trim(strip_tags($_GET['search'])), ENT_QUOTES) : '';
+	$page = (isset($_GET['page'])) ? (int) $_GET['page'] : 1;
+	$pagination = Category::getPageSearch($search, $page);
+	$pages = [];
+
+	for ($i = 1; $i <= $pagination['pages']; $i++) {
+		$pages[] = [
+			'href' => '/admin/categories?' . http_build_query([
+				'page' => $i,
+				'search' => $search
+			]),
+			'text' => $i
+		];
+	}
+
 	$page = new PageAdmin();
-	$page->setTpl('categories', ['categories' => Category::listAll()]);
+	$page->setTpl('categories', [
+		'categories' => $pagination['data'],
+		'search' => $search,
+		'pages' => $pages
+	]);
 });
 
 $app->get('/admin/categories/create', function () {
