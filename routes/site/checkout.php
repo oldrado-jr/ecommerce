@@ -22,6 +22,7 @@ $app->get('/checkout', function () {
         $address->loadFromCep($cart->getDeszipcode());
     } else {
         if (empty($address->getDesaddress())) $address->setDesaddress('');
+        if (empty($address->getDesnumber())) $address->setDesnumber('');
         if (empty($address->getDescomplement())) $address->setDescomplement('');
         if (empty($address->getDesdistrict())) $address->setDesdistrict('');
         if (empty($address->getDescity())) $address->setDescity('');
@@ -35,7 +36,7 @@ $app->get('/checkout', function () {
 		'cart' => $cart->getValues(),
         'address' => $address->getValues(),
         'products' => $cart->getProducts(),
-        'error' => Address::getMsgError()
+        'checkoutError' => Address::getMsgError()
 	]);
 });
 
