@@ -6,8 +6,28 @@ use Hcode\PageAdmin;
 
 $app->get('/admin/products', function () {
     User::verifyLogin();
+
+    $search = (isset($_GET['search'])) ? htmlentities(trim(strip_tags($_GET['search'])), ENT_QUOTES) : '';
+    $page = (isset($_GET['page'])) ? (int) $_GET['page'] : 1;
+    $pagination = Product::getPageSearch($search, $page);
+    $pages = [];
+
+    for ($i = 1; $i <= $pagination['pages']; $i++) {
+        $pages[] = [
+            'href' => '/admin/products?' . http_build_query([
+                'page' => $i,
+                'search' => $search
+            ]),
+            'text' => $i
+        ];
+    }
+
     $page = new PageAdmin();
-    $page->setTpl('products', ['products' => Product::listAll()]);
+    $page->setTpl('products', [
+        'products' => $pagination['data'],
+        'search' => $search,
+        'pages' => $pages
+    ]);
 });
 
 $app->get('/admin/products/create', function () {
