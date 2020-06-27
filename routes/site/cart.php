@@ -1,5 +1,6 @@
 <?php
 
+use Hcode\ErrorHandler;
 use Hcode\Model\Cart;
 use Hcode\Model\Product;
 use Hcode\Page;
@@ -10,7 +11,7 @@ $app->get('/cart', function () {
 	$page->setTpl('cart', [
 		'cart' => $cart->getValues(),
 		'products' => $cart->getProducts(),
-		'error' => Cart::getMsgError()
+		'error' => ErrorHandler::getMsgError()
 	]);
 });
 

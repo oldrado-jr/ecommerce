@@ -1,11 +1,14 @@
 <?php
 
+use Hcode\ErrorHandler;
 use Hcode\Model\Address;
 use Hcode\Model\Cart;
 use Hcode\Model\Order;
 use Hcode\Model\OrderStatus;
 use Hcode\Model\User;
 use Hcode\Page;
+
+ErrorHandler::create(Address::SESSION_ERROR);
 
 $app->get('/checkout', function () {
     User::verifyLogin(false);
@@ -36,7 +39,7 @@ $app->get('/checkout', function () {
         'cart' => $cart->getValues(),
         'address' => $address->getValues(),
         'products' => $cart->getProducts(),
-        'checkoutError' => Address::getMsgError()
+        'checkoutError' => ErrorHandler::getMsgError()
     ]);
 });
 
@@ -58,7 +61,7 @@ $app->post('/checkout', function () {
     }
 
     if (!empty($errors)) {
-        Address::setMsgError(implode('<br/>', $errors));
+        ErrorHandler::setMsgError(implode('<br/>', $errors));
         header('Location: /checkout');
         exit;
     }

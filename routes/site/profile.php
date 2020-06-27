@@ -1,9 +1,14 @@
 <?php
 
+use Hcode\ErrorHandler;
 use Hcode\Model\Cart;
 use Hcode\Model\Order;
 use Hcode\Model\User;
 use Hcode\Page;
+use Hcode\SuccessHandler;
+
+ErrorHandler::create(User::ERROR);
+SuccessHandler::create(User::SUCCESS);
 
 $app->get('/profile', function () {
     User::verifyLogin(false);
@@ -11,8 +16,8 @@ $app->get('/profile', function () {
     $page = new Page();
     $page->setTpl('profile', [
         'user' => $user->getValues(),
-        'profileMsg' => User::getSuccess(),
-        'profileError' => User::getError()
+        'profileMsg' => SuccessHandler::getMsgSuccess(),
+        'profileError' => ErrorHandler::getMsgError()
     ]);
 });
 
@@ -20,7 +25,7 @@ $app->post('/profile', function () {
     User::verifyLogin(false);
 
     if (empty($_POST['desemail'])) {
-        User::setError('Preencha o seu e-mail!');
+        ErrorHandler::setMsgError('Preencha o seu e-mail!');
         header('Location: /profile');
         exit;
     }
@@ -28,7 +33,7 @@ $app->post('/profile', function () {
     $user = User::getFromSession();
 
     if ($user->getDesemail() !== $_POST['desemail'] && User::checkLoginExists($_POST['desemail'])) {
-        User::setError('Este endereço de e-mail já está cadastrado!');
+        ErrorHandler::setMsgError('Este endereço de e-mail já está cadastrado!');
         header('Location: /profile');
         exit;
     }
@@ -40,7 +45,7 @@ $app->post('/profile', function () {
     $user->setData($_POST);
     $user->update();
 
-    User::setSuccess('Dados alterados com sucesso!');
+    SuccessHandler::setMsgSuccess('Dados alterados com sucesso!');
 
     header('Location: /profile');
     exit;
@@ -75,8 +80,8 @@ $app->get('/profile/change-password', function () {
     User::verifyLogin(false);
     $page = new Page();
     $page->setTpl('profile-change-password', [
-        'changePassError' => User::getError(),
-        'changePassSuccess' => User::getSuccess()
+        'changePassError' => ErrorHandler::getMsgError(),
+        'changePassSuccess' => SuccessHandler::getMsgSuccess()
     ]);
 });
 
@@ -84,31 +89,31 @@ $app->post('/profile/change-password', function () {
     User::verifyLogin(false);
 
     if (empty($_POST['current_pass'])) {
-        User::setError('Digite a senha atual!');
+        ErrorHandler::setMsgError('Digite a senha atual!');
         header('Location: /profile/change-password');
         exit;
     }
 
     if (empty($_POST['new_pass'])) {
-        User::setError('Digite a nova senha!');
+        ErrorHandler::setMsgError('Digite a nova senha!');
         header('Location: /profile/change-password');
         exit;
     }
 
     if (empty($_POST['new_pass_confirm'])) {
-        User::setError('Confirme a nova senha!');
+        ErrorHandler::setMsgError('Confirme a nova senha!');
         header('Location: /profile/change-password');
         exit;
     }
 
     if ($_POST['new_pass_confirm'] !== $_POST['new_pass']) {
-        User::setError('As senhas não coincidem!');
+        ErrorHandler::setMsgError('As senhas não coincidem!');
         header('Location: /profile/change-password');
         exit;
     }
 
     if ($_POST['current_pass'] === $_POST['new_pass']) {
-        User::setError('A sua nova senha deve ser diferente da atual!');
+        ErrorHandler::setMsgError('A sua nova senha deve ser diferente da atual!');
         header('Location: /profile/change-password');
         exit;
     }
@@ -116,14 +121,14 @@ $app->post('/profile/change-password', function () {
     $user = User::getFromSession();
 
     if (!password_verify($_POST['current_pass'], $user->getDespassword())) {
-        User::setError('Senha inválida!');
+        ErrorHandler::setMsgError('Senha inválida!');
         header('Location: /profile/change-password');
         exit;
     }
 
     $user->setDespassword($_POST['new_pass']);
     $user->update();
-    User::setSuccess('Senha alterada com sucesso!');
+    SuccessHandler::setMsgSuccess('Senha alterada com sucesso!');
 
     header('Location: /profile/change-password');
     exit;

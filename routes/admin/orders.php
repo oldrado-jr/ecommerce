@@ -1,9 +1,14 @@
 <?php
 
+use Hcode\ErrorHandler;
 use Hcode\Model\Order;
 use Hcode\Model\OrderStatus;
 use Hcode\Model\User;
 use Hcode\PageAdmin;
+use Hcode\SuccessHandler;
+
+ErrorHandler::create(Order::SESSION_ERROR);
+SuccessHandler::create(Order::SESSION_SUCCESS);
 
 $app->get('/admin/orders/:idorder/status', function ($idOrder) {
     User::verifyLogin();
@@ -15,8 +20,8 @@ $app->get('/admin/orders/:idorder/status', function ($idOrder) {
     $page->setTpl('order-status', [
         'order' => $order->getValues(),
         'status' => OrderStatus::listAll(),
-        'msgError' => Order::getError(),
-        'msgSuccess' => Order::getSuccess()
+        'msgError' => ErrorHandler::getMsgError(),
+        'msgSuccess' => SuccessHandler::getMsgSuccess()
     ]);
 });
 
@@ -24,7 +29,7 @@ $app->post('/admin/orders/:idorder/status', function ($idOrder) {
     User::verifyLogin();
 
     if (!is_numeric($_POST['idstatus']) || (int) $_POST['idstatus'] <= 0) {
-        Order::setError('Informe o status atual!');
+        ErrorHandler::setMsgError('Informe o status atual!');
         header("Location: /admin/orders/${idOrder}/status");
         exit;
     }
@@ -34,7 +39,7 @@ $app->post('/admin/orders/:idorder/status', function ($idOrder) {
     $order->setIdstatus((int) $_POST['idstatus']);
     $order->save();
 
-    Order::setSuccess('Status atualizado com sucesso!');
+    SuccessHandler::setMsgSuccess('Status atualizado com sucesso!');
     header("Location: /admin/orders/${idOrder}/status");
     exit;
 });

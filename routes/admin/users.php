@@ -1,7 +1,12 @@
 <?php
 
+use Hcode\ErrorHandler;
 use Hcode\Model\User;
 use Hcode\PageAdmin;
+use Hcode\SuccessHandler;
+
+ErrorHandler::create(User::ERROR);
+SuccessHandler::create(User::SUCCESS);
 
 $app->get('/admin', function () {
 	User::verifyLogin();
@@ -21,7 +26,7 @@ $app->post('/admin/login', function () {
 	try {
 		User::login($_POST['login'], $_POST['password']);
 	} catch (Exception $e) {
-		User::setError($e->getMessage());
+		ErrorHandler::setMsgError($e->getMessage());
 	}
 
 	header('Location: /admin');
@@ -53,8 +58,8 @@ $app->get('/admin/users/:iduser/password', function ($idUser) {
 
 	$page = new PageAdmin();
 	$page->setTpl('users-password', [
-		'msgError' => User::getError(),
-		'msgSuccess' => User::getSuccess(),
+		'msgError' => ErrorHandler::getMsgError(),
+		'msgSuccess' => SuccessHandler::getMsgSuccess(),
 		'user' => $user->getValues()
 	]);
 });
@@ -63,19 +68,19 @@ $app->post('/admin/users/:iduser/password', function ($idUser) {
 	User::verifyLogin();
 
 	if (empty($_POST['despassword'])) {
-        User::setError('Digite a nova senha!');
+        ErrorHandler::setMsgError('Digite a nova senha!');
         header("Location: /admin/users/${idUser}/password");
         exit;
     }
 
     if (empty($_POST['despassword-confirm'])) {
-        User::setError('Confirme a nova senha!');
+        ErrorHandler::setMsgError('Confirme a nova senha!');
         header("Location: /admin/users/${idUser}/password");
         exit;
     }
 
     if ($_POST['despassword-confirm'] !== $_POST['despassword']) {
-        User::setError('As senhas não coincidem!');
+        ErrorHandler::setMsgError('As senhas não coincidem!');
         header("Location: /admin/users/${idUser}/password");
         exit;
 	}
@@ -84,14 +89,14 @@ $app->post('/admin/users/:iduser/password', function ($idUser) {
 	$user->get($idUser);
 
     if (password_verify($_POST['despassword'], $user->getDespassword())) {
-        User::setError('A sua nova senha deve ser diferente da atual!');
+        ErrorHandler::setMsgError('A sua nova senha deve ser diferente da atual!');
         header("Location: /admin/users/${idUser}/password");
         exit;
     }
 
     $user->setDespassword($_POST['despassword']);
     $user->update();
-    User::setSuccess('Senha alterada com sucesso!');
+    SuccessHandler::setMsgSuccess('Senha alterada com sucesso!');
 
 	header("Location: /admin/users/${idUser}/password");
 	exit;

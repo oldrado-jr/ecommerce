@@ -1,7 +1,12 @@
 <?php
 
+use Hcode\ErrorHandler;
+use Hcode\ErrorRegisterHandler;
 use Hcode\Model\User;
 use Hcode\Page;
+
+ErrorHandler::create(User::ERROR);
+ErrorRegisterHandler::create(User::ERROR_REGISTER);
 
 $app->get('/login', function () {
 	$registerValues = $_SESSION['registerValues'] ?? [
@@ -11,8 +16,8 @@ $app->get('/login', function () {
 	];
 	$page = new Page();
 	$page->setTpl('login', [
-		'error' => User::getError(),
-		'errorRegister' => User::getErrorRegister(),
+		'error' => ErrorHandler::getMsgError(),
+		'errorRegister' => ErrorRegisterHandler::getMsgError(),
 		'registerValues' => $registerValues
 	]);
 });
@@ -21,7 +26,7 @@ $app->post('/login', function () {
 	try {
 		User::login($_POST['login'], $_POST['password']);
 	} catch (Exception $e) {
-		User::setError($e->getMessage());
+		ErrorHandler::setMsgError($e->getMessage());
 	}
 
 	header('Location: /checkout');
@@ -48,9 +53,9 @@ $app->post('/register', function () {
 		$_SESSION['registerValues'] = array_map('trim', $_POST);
 
 		if (!empty($errors)) {
-			User::setErrorRegister(implode('<br/>', $errors));
+			ErrorRegisterHandler::setMsgError(implode('<br/>', $errors));
 		} elseif (User::checkLoginExists($_POST['email'])) {
-			User::setErrorRegister('Este endereço de e-mail já está sendo usado por outro usuário.');
+			ErrorRegisterHandler::setMsgError('Este endereço de e-mail já está sendo usado por outro usuário.');
 		}
 
 		header('Location: /login');
