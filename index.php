@@ -11,12 +11,13 @@ Dotenv::createImmutable(__DIR__)->load();
 $app = new Slim();
 $app->config('debug', filter_var($_ENV['APP_DEBUG'], FILTER_VALIDATE_BOOLEAN));
 
-define('SITE_ROUTE', 'routes' . DIRECTORY_SEPARATOR . 'site' . DIRECTORY_SEPARATOR);
-define('ADMIN_ROUTE', 'routes' . DIRECTORY_SEPARATOR . 'admin' . DIRECTORY_SEPARATOR);
+$routesDir = 'routes' . DIRECTORY_SEPARATOR;
+$siteRoutesDir = $routesDir . 'site' . DIRECTORY_SEPARATOR;
+$adminRoutesDir = $routesDir . 'admin' . DIRECTORY_SEPARATOR;
 
 require_once 'util' . DIRECTORY_SEPARATOR . 'functions.php';
 
-foreach (glob('{' . SITE_ROUTE . '*.php,' . ADMIN_ROUTE . '*.php}', GLOB_BRACE) as $rota) {
+foreach (glob('{' . $siteRoutesDir . '*.php,' . $adminRoutesDir . '*.php}', GLOB_BRACE) as $rota) {
     require_once $rota;
 }
 
