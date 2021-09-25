@@ -3,3 +3,4 @@ views-cache/
 res/site/img/products/
 .env
 .env.backup
+.vscode/
