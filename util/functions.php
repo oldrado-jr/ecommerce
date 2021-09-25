@@ -3,6 +3,10 @@
 use Hcode\Model\Cart;
 use Hcode\Model\User;
 
+function dd(...$vars) {
+	die(var_dump(...$vars));
+}
+
 function formatPrice($vlprice, $currency = true) {
     if (!is_numeric($vlprice) || $vlprice < 0) {
         $vlprice = 0;
