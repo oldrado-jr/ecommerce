@@ -4,12 +4,15 @@ session_start();
 require_once 'vendor' . DIRECTORY_SEPARATOR . 'autoload.php';
 
 use Dotenv\Dotenv;
-use Slim\Slim;
+use Slim\App;
 
 Dotenv::createImmutable(__DIR__)->load();
 
-$app = new Slim();
-$app->config('debug', filter_var($_ENV['APP_DEBUG'], FILTER_VALIDATE_BOOLEAN));
+$app = new App([
+	'settings' => [
+		'displayErrorDetails' => filter_var($_ENV['APP_DEBUG'], FILTER_VALIDATE_BOOLEAN)
+	]
+]);
 
 $routesDir = 'routes' . DIRECTORY_SEPARATOR;
 $siteRoutesDir = $routesDir . 'site' . DIRECTORY_SEPARATOR;
