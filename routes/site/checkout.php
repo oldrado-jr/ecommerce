@@ -7,6 +7,7 @@ use Hcode\Model\Order;
 use Hcode\Model\OrderStatus;
 use Hcode\Model\User;
 use Hcode\Page;
+use Hcode\PaymentMethod;
 
 ErrorHandler::create(Address::SESSION_ERROR);
 
@@ -89,12 +90,11 @@ $app->post('/checkout', function () {
     $order->save();
 
     switch ((int) $_POST['payment-method']) {
-        case 1:
-            header('Location: /order/' . $order->getidOrder() . '/pagseguro');
+        case PaymentMethod::PAG_SEGURO:
+            header('Location: /order/' . $order->getIdorder() . '/pagseguro');
             break;
-
-        case 2:
-            header('Location: /order/' . $order->getidOrder() . '/paypal');
+        case PaymentMethod::PAYPAL:
+            header('Location: /order/' . $order->getIdorder() . '/paypal');
             break;
     }
 
