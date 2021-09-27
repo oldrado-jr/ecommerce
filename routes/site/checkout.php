@@ -8,18 +8,21 @@ use Hcode\Model\OrderStatus;
 use Hcode\Model\User;
 use Hcode\Page;
 use Hcode\PaymentMethod;
+use Psr\Http\Message\ResponseInterface as Response;
+use Psr\Http\Message\ServerRequestInterface as Request;
 
 ErrorHandler::create(Address::SESSION_ERROR);
 
-$app->get('/checkout', function () {
+$app->get('/checkout', function (Request $request, Response $response) {
     User::verifyLogin(false);
 
     $address = new Address();
     $cart = Cart::getFromSession();
+	$params = $request->getQueryParams();
 
-    if (!empty($_GET['zipcode'])) {
-        $address->loadFromCep($_GET['zipcode']);
-        $cart->setDeszipcode($_GET['zipcode']);
+    if (!empty($params['zipcode'])) {
+        $address->loadFromCep($params['zipcode']);
+        $cart->setDeszipcode($params['zipcode']);
         $cart->save();
         $cart->getCalculateTotal();
     } elseif (!empty($cart->getDeszipcode())) {
@@ -42,14 +45,16 @@ $app->get('/checkout', function () {
         'products' => $cart->getProducts(),
         'checkoutError' => ErrorHandler::getMsgError()
     ]);
+
+	return $response;
 });
 
-$app->post('/checkout', function () {
+$app->post('/checkout', function (Request $request, Response $response) {
     User::verifyLogin(false);
 
     $errors = [];
 
-    foreach ($_POST as $key => &$value) {
+    foreach ($request->getParsedBody() as $key => &$value) {
         if ('shipping_method' == $key || 'woocommerce_checkout_place_order' == $key || 'descomplement' == $key) {
             continue;
         }
@@ -63,8 +68,7 @@ $app->post('/checkout', function () {
 
     if (!empty($errors)) {
         ErrorHandler::setMsgError(implode('<br/>', $errors));
-        header('Location: /checkout');
-        exit;
+        return $response->withHeader('Location', '/checkout')->withStatus(302);
     }
 
     $user = User::getFromSession();
@@ -91,21 +95,17 @@ $app->post('/checkout', function () {
 
     switch ((int) $_POST['payment-method']) {
         case PaymentMethod::PAG_SEGURO:
-            header('Location: /order/' . $order->getIdorder() . '/pagseguro');
-            break;
+            return $response->withHeader('Location', "/order/{$order->getIdorder()}/pagseguro")->withStatus(302);
         case PaymentMethod::PAYPAL:
-            header('Location: /order/' . $order->getIdorder() . '/paypal');
-            break;
+            return $response->withHeader('Location', "/order/{$order->getIdorder()}/paypal")->withStatus(302);
     }
-
-    exit;
 });
 
-$app->get('/order/:idorder/pagseguro', function ($idOrder) {
+$app->get('/order/{idorder:[0-9]+}/pagseguro', function (Request $request, Response $response, array $args) {
     User::verifyLogin(false);
 
     $order = new Order();
-    $order->get($idOrder);
+    $order->get($args['idorder']);
     $cart = $order->getCart();
 
     $page = new Page([
@@ -121,13 +121,15 @@ $app->get('/order/:idorder/pagseguro', function ($idOrder) {
             'number' => substr($order->getnrphone(), 2)
         ]
     ]);
+
+	return $response;
 });
 
-$app->get("/order/:idorder/paypal", function ($idOrder) {
+$app->get("/order/{idorder:[0-9]+}/paypal", function (Request $request, Response $response, array $args) {
     User::verifyLogin(false);
 
     $order = new Order();
-    $order->get($idOrder);
+    $order->get($args['idorder']);
     $cart = $order->getCart();
 
     $page = new Page([
@@ -139,4 +141,6 @@ $app->get("/order/:idorder/paypal", function ($idOrder) {
         'cart' => $cart->getValues(),
         'products' => $cart->getProducts()
     ]);
+
+	return $response;
 });

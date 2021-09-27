@@ -6,15 +6,17 @@ use Hcode\Model\OrderStatus;
 use Hcode\Model\User;
 use Hcode\PageAdmin;
 use Hcode\SuccessHandler;
+use Psr\Http\Message\ResponseInterface as Response;
+use Psr\Http\Message\ServerRequestInterface as Request;
 
 ErrorHandler::create(Order::SESSION_ERROR);
 SuccessHandler::create(Order::SESSION_SUCCESS);
 
-$app->get('/admin/orders/:idorder/status', function ($idOrder) {
+$app->get('/admin/orders/{idorder:[0-9]+}/status', function (Request $request, Response $response, array $args) {
     User::verifyLogin();
 
     $order = new Order();
-    $order->get($idOrder);
+    $order->get($args['idorder']);
 
     $page = new PageAdmin();
     $page->setTpl('order-status', [
@@ -23,43 +25,44 @@ $app->get('/admin/orders/:idorder/status', function ($idOrder) {
         'msgError' => ErrorHandler::getMsgError(),
         'msgSuccess' => SuccessHandler::getMsgSuccess()
     ]);
+
+	return $response;
 });
 
-$app->post('/admin/orders/:idorder/status', function ($idOrder) {
+$app->post('/admin/orders/{idorder:[0-9]+}/status', function (Request $request, Response $response, array $args) {
     User::verifyLogin();
+	$params = $request->getParsedBody();
 
-    if (!is_numeric($_POST['idstatus']) || (int) $_POST['idstatus'] <= 0) {
+    if (!is_numeric($params['idstatus']) || (int) $params['idstatus'] <= 0) {
         ErrorHandler::setMsgError('Informe o status atual!');
-        header("Location: /admin/orders/${idOrder}/status");
-        exit;
+        return $response->withHeader('Location', "/admin/orders/{$args['idorder']}/status")->withStatus(302);
     }
 
     $order = new Order();
-    $order->get($idOrder);
-    $order->setIdstatus((int) $_POST['idstatus']);
+    $order->get($args['idorder']);
+    $order->setIdstatus((int) $params['idstatus']);
     $order->save();
 
     SuccessHandler::setMsgSuccess('Status atualizado com sucesso!');
-    header("Location: /admin/orders/${idOrder}/status");
-    exit;
+    return $response->withHeader('Location', "/admin/orders/{$args['idorder']}/status")->withStatus(302);
 });
 
-$app->get('/admin/orders/:idorder/delete', function ($idOrder) {
+$app->get('/admin/orders/{idorder:[0-9]+}/delete', function (Request $request, Response $response, array $args) {
     User::verifyLogin();
 
     $order = new Order();
-    $order->get($idOrder);
+    $order->get($args['idorder']);
     $order->delete();
 
     header('Location: /admin/orders');
-    exit;
+    return $response->withHeader('Location', "/admin/orders")->withStatus(302);
 });
 
-$app->get('/admin/orders/:idorder', function ($idOrder) {
+$app->get('/admin/orders/{idorder:[0-9]+}', function (Request $request, Response $response, array $args) {
     User::verifyLogin();
 
     $order = new Order();
-    $order->get($idOrder);
+    $order->get($args['idorder']);
 
     $cart = $order->getCart();
 
@@ -69,13 +72,16 @@ $app->get('/admin/orders/:idorder', function ($idOrder) {
         'cart' => $cart->getValues(),
         'products' => $cart->getProducts()
     ]);
+
+	return $response;
 });
 
-$app->get('/admin/orders', function() {
+$app->get('/admin/orders', function (Request $request, Response $response) {
     User::verifyLogin();
+	$params = $request->getQueryParams();
 
-    $search = (isset($_GET['search'])) ? htmlentities(trim(strip_tags($_GET['search'])), ENT_QUOTES) : '';
-    $page = (isset($_GET['page'])) ? (int) $_GET['page'] : 1;
+    $search = (isset($params['search'])) ? htmlentities(trim(strip_tags($params['search'])), ENT_QUOTES) : '';
+    $page = (isset($params['page'])) ? (int) $params['page'] : 1;
     $pagination = Order::getPageSearch($search, $page);
     $pages = [];
 
@@ -95,4 +101,6 @@ $app->get('/admin/orders', function() {
         'search' => $search,
         'pages' => $pages
     ]);
+
+	return $response;
 });

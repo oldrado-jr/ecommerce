@@ -4,57 +4,59 @@ use Hcode\ErrorHandler;
 use Hcode\Model\User;
 use Hcode\PageAdmin;
 use Hcode\SuccessHandler;
+use Psr\Http\Message\ResponseInterface as Response;
+use Psr\Http\Message\ServerRequestInterface as Request;
 
 ErrorHandler::create(User::ERROR);
 SuccessHandler::create(User::SUCCESS);
 
-$app->get('/admin', function () {
+$app->get('/admin', function (Request $request, Response $response) {
 	User::verifyLogin();
 	$page = new PageAdmin();
 	$page->setTpl('index');
+	return $response;
 });
 
-$app->get('/admin/login', function () {
+$app->get('/admin/login', function (Request $request, Response $response) {
 	$page = new PageAdmin([
 		'header' => false,
 		'footer' => false
 	]);
 	$page->setTpl('login');
+	return $response;
 });
 
-$app->post('/admin/login', function () {
+$app->post('/admin/login', function (Request $request, Response $response) {
 	try {
-		User::login($_POST['login'], $_POST['password']);
+		$params = $request->getParsedBody();
+		User::login($params['login'], $params['password']);
 	} catch (Exception $e) {
 		ErrorHandler::setMsgError($e->getMessage());
 	}
 
-	header('Location: /admin');
-	exit;
+	return $response->withHeader('Location', '/admin')->withStatus(302);
 });
 
-$app->get('/admin/logout', function () {
+$app->get('/admin/logout', function (Request $request, Response $response) {
 	User::logout();
-	header('Location: /admin/login');
-	exit;
+	return $response->withHeader('Location', '/admin/login')->withStatus(302);
 });
 
-$app->get('/admin/users/:iduser/delete', function ($idUser) {
+$app->get('/admin/users/{iduser:[0-9]+}/delete', function (Request $request, Response $response, array $args) {
 	User::verifyLogin();
 
 	$user = new User();
-	$user->get($idUser);
+	$user->get($args['iduser']);
 	$user->delete();
 
-	header('Location: /admin/users');
-	exit;
+	return $response->withHeader('Location', '/admin/users')->withStatus(302);
 });
 
-$app->get('/admin/users/:iduser/password', function ($idUser) {
+$app->get('/admin/users/{iduser:[0-9]+}/password', function (Request $request, Response $response, array $args) {
 	User::verifyLogin();
 
 	$user = new User();
-	$user->get($idUser);
+	$user->get($args['iduser']);
 
 	$page = new PageAdmin();
 	$page->setTpl('users-password', [
@@ -62,98 +64,99 @@ $app->get('/admin/users/:iduser/password', function ($idUser) {
 		'msgSuccess' => SuccessHandler::getMsgSuccess(),
 		'user' => $user->getValues()
 	]);
+
+	return $response;
 });
 
-$app->post('/admin/users/:iduser/password', function ($idUser) {
+// TODO: Refactor password validation and redirect
+$app->post('/admin/users/{iduser:[0-9]+}/password', function (Request $request, Response $response, array $args) {
 	User::verifyLogin();
+	$params = $request->getParsedBody();
+	$errorMsg = '';
 
-	if (empty($_POST['despassword'])) {
-        ErrorHandler::setMsgError('Digite a nova senha!');
-        header("Location: /admin/users/${idUser}/password");
-        exit;
-    }
+	if (empty($params['despassword'])) {
+        $errorMsg = 'Digite a nova senha!';
+    } elseif (empty($params['despassword-confirm'])) {
+        $errorMsg = 'Confirme a nova senha!';
+    } elseif ($params['despassword-confirm'] !== $params['despassword']) {
+        $errorMsg = 'As senhas não coincidem!';
+	}
 
-    if (empty($_POST['despassword-confirm'])) {
-        ErrorHandler::setMsgError('Confirme a nova senha!');
-        header("Location: /admin/users/${idUser}/password");
-        exit;
-    }
-
-    if ($_POST['despassword-confirm'] !== $_POST['despassword']) {
-        ErrorHandler::setMsgError('As senhas não coincidem!');
-        header("Location: /admin/users/${idUser}/password");
-        exit;
+	if (!empty($errorMsg)) {
+		return $response->withHeader('Location', "/admin/users/{$args['iduser']}/password")->withStatus(302);
 	}
 
 	$user = new User();
-	$user->get($idUser);
+	$user->get($args['iduser']);
 
-    if (password_verify($_POST['despassword'], $user->getDespassword())) {
+    if (password_verify($params['despassword'], $user->getDespassword())) {
         ErrorHandler::setMsgError('A sua nova senha deve ser diferente da atual!');
-        header("Location: /admin/users/${idUser}/password");
-        exit;
+        return $response->withHeader('Location', "/admin/users/{$args['iduser']}/password")->withStatus(302);
     }
 
-    $user->setDespassword($_POST['despassword']);
+    $user->setDespassword($params['despassword']);
     $user->update();
     SuccessHandler::setMsgSuccess('Senha alterada com sucesso!');
 
-	header("Location: /admin/users/${idUser}/password");
-	exit;
+	return $response->withHeader('Location', "/admin/users/{$args['iduser']}/password")->withStatus(302);
 });
 
-$app->get('/admin/users/create', function () {
+$app->get('/admin/users/create', function (Request $request, Response $response) {
 	User::verifyLogin();
 	$page = new PageAdmin();
 	$page->setTpl('users-create');
+	return $response;
 });
 
-$app->post('/admin/users/create', function () {
+$app->post('/admin/users/create', function (Request $request, Response $response) {
 	User::verifyLogin();
+	$params = $request->getParsedBody();
 
-	if (!isset($_POST['inadmin'])) {
-		$_POST['inadmin'] = 0;
+	if (!isset($params['inadmin'])) {
+		$params['inadmin'] = 0;
 	}
 
 	$user = new User();
-	$user->setData($_POST);
+	$user->setData($params);
 	$user->save();
 
-	header('Location: /admin/users');
-	exit;
+	return $response->withHeader('Location', '/admin/users')->withStatus(302);
 });
 
-$app->get('/admin/users/:iduser', function ($idUser) {
+$app->get('/admin/users/{iduser:[0-9]+}', function (Request $request, Response $response, array $args) {
 	User::verifyLogin();
 
 	$user = new User();
-	$user->get($idUser);
+	$user->get($args['iduser']);
 
 	$page = new PageAdmin();
 	$page->setTpl('users-update', ['user' => $user->getValues()]);
+
+	return $response;
 });
 
-$app->post('/admin/users/:iduser', function ($idUser) {
+$app->post('/admin/users/{iduser:[0-9]+}', function (Request $request, Response $response, array $args) {
 	User::verifyLogin();
+	$params = $request->getParsedBody();
 
-	if (!isset($_POST['inadmin'])) {
-		$_POST['inadmin'] = 0;
+	if (!isset($params['inadmin'])) {
+		$params['inadmin'] = 0;
 	}
 
 	$user = new User();
-	$user->get($idUser);
-	$user->setData($_POST);
+	$user->get($args['iduser']);
+	$user->setData($params);
 	$user->update();
 
-	header('Location: /admin/users');
-	exit;
+	return $response->withHeader('Location', '/admin/users')->withStatus(302);
 });
 
-$app->get('/admin/users', function () {
+$app->get('/admin/users', function (Request $request, Response $response) {
 	User::verifyLogin();
+	$params = $request->getQueryParams();
 
-	$search = (isset($_GET['search'])) ? htmlentities(trim(strip_tags($_GET['search'])), ENT_QUOTES) : '';
-	$page = (isset($_GET['page'])) ? (int) $_GET['page'] : 1;
+	$search = (isset($params['search'])) ? htmlentities(trim(strip_tags($params['search'])), ENT_QUOTES) : '';
+	$page = (isset($params['page'])) ? (int) $params['page'] : 1;
 	$pagination = User::getPageSearch($search, $page);
 	$pages = [];
 
@@ -173,4 +176,6 @@ $app->get('/admin/users', function () {
 		'search' => $search,
 		'pages' => $pages
 	]);
+
+	return $response;
 });

@@ -3,12 +3,15 @@
 use Hcode\Model\Category;
 use Hcode\Model\User;
 use Hcode\PageAdmin;
+use Psr\Http\Message\ResponseInterface as Response;
+use Psr\Http\Message\ServerRequestInterface as Request;
 
-$app->get('/admin/categories', function () {
+$app->get('/admin/categories', function (Request $request, Response $response) {
 	User::verifyLogin();
+	$params = $request->getQueryParams();
 
-	$search = (isset($_GET['search'])) ? htmlentities(trim(strip_tags($_GET['search'])), ENT_QUOTES) : '';
-	$page = (isset($_GET['page'])) ? (int) $_GET['page'] : 1;
+	$search = (isset($params['search'])) ? htmlentities(trim(strip_tags($params['search'])), ENT_QUOTES) : '';
+	$page = (isset($params['page'])) ? (int) $params['page'] : 1;
 	$pagination = Category::getPageSearch($search, $page);
 	$pages = [];
 
@@ -28,54 +31,56 @@ $app->get('/admin/categories', function () {
 		'search' => $search,
 		'pages' => $pages
 	]);
+
+	return $response;
 });
 
-$app->get('/admin/categories/create', function () {
+$app->get('/admin/categories/create', function (Request $request, Response $response) {
 	User::verifyLogin();
 	$page = new PageAdmin();
 	$page->setTpl('categories-create');
+	return $response;
 });
 
-$app->post('/admin/categories/create', function () {
+$app->post('/admin/categories/create', function (Request $request, Response $response) {
 	User::verifyLogin();
 
 	$category = new Category();
-	$category->setData($_POST);
+	$category->setData($request->getParsedBody());
 	$category->save();
 
-	header('Location: /admin/categories');
-	exit;
+	return $response->withHeader('Location', '/admin/categories')->withStatus(302);
 });
 
-$app->get('/admin/categories/:idcategory/delete', function ($idCategory) {
+$app->get('/admin/categories/{idcategory:[0-9]+}/delete', function (Request $request, Response $response, array $args) {
 	User::verifyLogin();
 
 	$category = new Category();
-	$category->get($idCategory);
+	$category->get($args['idcategory']);
 	$category->delete();
 
-	header('Location: /admin/categories');
-	exit;
+	return $response->withHeader('Location', '/admin/categories')->withStatus(302);
 });
 
-$app->get('/admin/categories/:idcategory', function ($idCategory) {
+$app->get('/admin/categories/{idcategory:[0-9]+}', function (Request $request, Response $response, array $args) {
 	User::verifyLogin();
 
 	$category = new Category();
-	$category->get($idCategory);
+	$category->get($args['idcategory']);
 
 	$page = new PageAdmin();
 	$page->setTpl('categories-update', ['category' => $category->getValues()]);
+
+	return $response;
 });
 
-$app->post('/admin/categories/:idcategory', function ($idCategory) {
+$app->post('/admin/categories/{idcategory:[0-9]+}', function (Request $request, Response $response, array $args) {
 	User::verifyLogin();
 
 	$category = new Category();
-	$category->get($idCategory);
-	$category->setData($_POST);
+	$category->get($args['idcategory']);
+	$category->setData($request->getParsedBody());
 	$category->save();
 
-	header('Location: /admin/categories');
-	exit;
+	return $response->withHeader('Location', '/admin/categories')->withStatus(302);
 });

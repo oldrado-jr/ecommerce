@@ -4,11 +4,13 @@ use Hcode\ErrorHandler;
 use Hcode\ErrorRegisterHandler;
 use Hcode\Model\User;
 use Hcode\Page;
+use Psr\Http\Message\ResponseInterface as Response;
+use Psr\Http\Message\ServerRequestInterface as Request;
 
 ErrorHandler::create(User::ERROR);
 ErrorRegisterHandler::create(User::ERROR_REGISTER);
 
-$app->get('/login', function () {
+$app->get('/login', function (Request $request, Response $response) {
 	$registerValues = $_SESSION['registerValues'] ?? [
 		'name' => '',
 		'email' => '',
@@ -20,46 +22,46 @@ $app->get('/login', function () {
 		'errorRegister' => ErrorRegisterHandler::getMsgError(),
 		'registerValues' => $registerValues
 	]);
+	return $response;
 });
 
-$app->post('/login', function () {
+$app->post('/login', function (Request $request, Response $response) {
 	try {
-		User::login($_POST['login'], $_POST['password']);
+		$params = $request->getParsedBody();
+		User::login($params['login'], $params['password']);
 	} catch (Exception $e) {
 		ErrorHandler::setMsgError($e->getMessage());
 	}
 
-	header('Location: /checkout');
-	exit;
+	return $response->withHeader('Location', '/checkout')->withStatus(302);
 });
 
-$app->get('/logout', function () {
+$app->get('/logout', function (Request $request, Response $response) {
 	User::logout();
-	header('Location: /login');
-	exit;
+	return $response->withHeader('Location', '/login')->withStatus(302);
 });
 
-$app->post('/register', function () {
+$app->post('/register', function (Request $request, Response $response) {
+	$params = $request->getParsedBody();
 	$errors = [];
 
-	foreach ($_POST as $key => &$value) {
+	foreach ($params as $key => &$value) {
 		if ('login' != $key && 'phone' != $key && empty($value)) {
 			$errors[] = "Preencha o campo ${key}!";
 		}
 	}
 
-	if (!empty($errors) || User::checkLoginExists($_POST['email'])) {
-		$_POST = array_map('strip_tags', $_POST);
-		$_SESSION['registerValues'] = array_map('trim', $_POST);
+	if (!empty($errors) || User::checkLoginExists($params['email'])) {
+		$params = array_map('strip_tags', $params);
+		$_SESSION['registerValues'] = array_map('trim', $params);
 
 		if (!empty($errors)) {
 			ErrorRegisterHandler::setMsgError(implode('<br/>', $errors));
-		} elseif (User::checkLoginExists($_POST['email'])) {
+		} elseif (User::checkLoginExists($params['email'])) {
 			ErrorRegisterHandler::setMsgError('Este endereço de e-mail já está sendo usado por outro usuário.');
 		}
 
-		header('Location: /login');
-		exit;
+		return $response->withHeader('Location', '/login')->withStatus(302);
 	}
 
 	unset($_SESSION['registerValues']);
@@ -67,16 +69,15 @@ $app->post('/register', function () {
 	$user = new User();
 	$user->setData([
 		'inadmin' => false,
-		'deslogin' => $_POST['email'],
-		'desperson' => $_POST['name'],
-		'desemail' => $_POST['email'],
-		'despassword' => $_POST['password'],
-		'nrphone' => $_POST['phone']
+		'deslogin' => $params['email'],
+		'desperson' => $params['name'],
+		'desemail' => $params['email'],
+		'despassword' => $params['password'],
+		'nrphone' => $params['phone']
 	]);
 	$user->save();
 
-	User::login($_POST['email'], $_POST['password']);
+	User::login($params['email'], $params['password']);
 
-	header('Location: /checkout');
-	exit;
+	return $response->withHeader('Location', '/checkout')->withStatus(302);
 });
