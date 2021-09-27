@@ -14,12 +14,12 @@
 <div class="single-product-area">
     <div class="zigzag-bottom"></div>
     <div class="container">
-        <div class="row">                
+        <div class="row">
             <div class="col-md-3">
                 {include="profile-menu"}
             </div>
             <div class="col-md-9">
-                
+
                 <div class="cart-collaterals">
                     <h2>Meus Pedidos</h2>
                 </div>
@@ -42,7 +42,7 @@
                             <td>{$value.desstatus}</td>
                             <td>{$value.desaddress}, {$value.desdistrict}, {$value.descity} - , {$value.desstate} CEP: {$value.deszipcode}</td>
                             <td style="width:222px;">
-                                <a class="btn btn-success" href="/payment/{$value.idorder}" role="button">Imprimir Boleto</a>
+                                <a class="btn btn-success" href="/order/{$value.idorder}" role="button">Imprimir Boleto</a>
                                 <a class="btn btn-default" href="/profile/orders/{$value.idorder}" role="button">Detalhes</a>
                             </td>
                         </tr>
