@@ -1,65 +1,80 @@
 <?php
 
+use Hcode\ErrorHandler;
 use Hcode\Model\User;
 use Hcode\PageAdmin;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
+use Slim\Routing\RouteCollectorProxy;
 
-$app->get('/admin/forgot', function (Request $request, Response $response) {
-	$page = new PageAdmin([
-		'header' => false,
-		'footer' => false
-	]);
-	$page->setTpl('forgot');
-	return $response;
-});
+ErrorHandler::create(User::SESSION);
 
-$app->post('/admin/forgot', function (Request $request, Response $response) {
-	$params = $request->getParsedBody();
-	User::getForgot($params['email']);
-	return $response->withHeader('Location', '/admin/forgot/sent')->withStatus(302);
-});
+$app->group('/admin/forgot', function (RouteCollectorProxy $group) {
+	$group->get('', function (Request $request, Response $response) {
+		$page = new PageAdmin([
+			'header' => false,
+			'footer' => false
+		]);
+		$page->setTpl('forgot');
+		return $response;
+	});
 
-$app->get('/admin/forgot/sent', function (Request $request, Response $response) {
-	$page = new PageAdmin([
-		'header' => false,
-		'footer' => false
-	]);
-	$page->setTpl('forgot-sent');
-	return $response;
-});
+	$group->post('', function (Request $request, Response $response) {
+		try {
+			$params = $request->getParsedBody();
+			User::getForgot($params['email']);
+			$redirectUrl = '/admin/forgot/sent';
+		} catch (Exception $e) {
+			ErrorHandler::setMsgError($e->getMessage());
+			$redirectUrl = '/admin/login';
+		}
 
-$app->get('/admin/forgot/reset', function (Request $request, Response $response) {
-	$params = $request->getQueryParams();
-	$user = User::validForgotDecrypt($params['code']);
+		return $response->withHeader('Location', $redirectUrl)->withStatus(302);
+	});
 
-	$page = new PageAdmin([
-		'header' => false,
-		'footer' => false
-	]);
-	$page->setTpl('forgot-reset', [
-		'name' => $user['desperson'],
-		'code' => $params['code']
-	]);
+	$group->get('/sent', function (Request $request, Response $response) {
+		$page = new PageAdmin([
+			'header' => false,
+			'footer' => false
+		]);
+		$page->setTpl('forgot-sent');
+		return $response;
+	});
 
-	return $response;
-});
+	$group->group('/reset', function (RouteCollectorProxy $subgroup) {
+		$subgroup->get('', function (Request $request, Response $response) {
+			$params = $request->getQueryParams();
+			$user = User::validForgotDecrypt($params['code']);
 
-$app->post('/admin/forgot/reset', function (Request $request, Response $response) {
-	$params = $request->getParsedBody();
-	$forgot = User::validForgotDecrypt($params['code']);
-	User::setForgotUsed($forgot['idrecovery']);
+			$page = new PageAdmin([
+				'header' => false,
+				'footer' => false
+			]);
+			$page->setTpl('forgot-reset', [
+				'name' => $user['desperson'],
+				'code' => $params['code']
+			]);
 
-	$user = new User();
-	$user->get((int)$forgot['iduser']);
-	$password = User::getPasswordHash($params['password']);
-	$user->setPassword($password);
+			return $response;
+		});
 
-	$page = new PageAdmin([
-		'header' => false,
-		'footer' => false
-	]);
-	$page->setTpl('forgot-reset-success');
+		$subgroup->post('', function (Request $request, Response $response) {
+			$params = $request->getParsedBody();
+			$forgot = User::validForgotDecrypt($params['code']);
+			User::setForgotUsed($forgot['idrecovery']);
 
-	return $response;
+			$user = new User();
+			$user->get((int)$forgot['iduser']);
+			$password = User::getPasswordHash($params['password']);
+			$user->setPassword($password);
+
+			$page = new PageAdmin([
+				'header' => false,
+				'footer' => false
+			]);
+			$page->setTpl('forgot-reset-success');
+
+			return $response;
+		});
+	});
 });

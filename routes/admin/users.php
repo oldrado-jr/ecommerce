@@ -6,176 +6,151 @@ use Hcode\PageAdmin;
 use Hcode\SuccessHandler;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
+use Slim\Routing\RouteCollectorProxy;
 
 ErrorHandler::create(User::ERROR);
 SuccessHandler::create(User::SUCCESS);
 
-$app->get('/admin', function (Request $request, Response $response) {
-	User::verifyLogin();
-	$page = new PageAdmin();
-	$page->setTpl('index');
-	return $response;
-});
+$app->group('/admin/users', function (RouteCollectorProxy $group) {
+	$group->group('/{iduser:[0-9]+}', function (RouteCollectorProxy $subgroup) {
+		$subgroup->get('/delete', function (Request $request, Response $response, array $args) {
+			User::verifyLogin();
 
-$app->get('/admin/login', function (Request $request, Response $response) {
-	$page = new PageAdmin([
-		'header' => false,
-		'footer' => false
-	]);
-	$page->setTpl('login');
-	return $response;
-});
+			$user = new User();
+			$user->get($args['iduser']);
+			$user->delete();
 
-$app->post('/admin/login', function (Request $request, Response $response) {
-	try {
-		$params = $request->getParsedBody();
-		User::login($params['login'], $params['password']);
-	} catch (Exception $e) {
-		ErrorHandler::setMsgError($e->getMessage());
-	}
+			return $response->withHeader('Location', '/admin/users')->withStatus(302);
+		});
 
-	return $response->withHeader('Location', '/admin')->withStatus(302);
-});
+		$subgroup->get('/password', function (Request $request, Response $response, array $args) {
+			User::verifyLogin();
 
-$app->get('/admin/logout', function (Request $request, Response $response) {
-	User::logout();
-	return $response->withHeader('Location', '/admin/login')->withStatus(302);
-});
+			$user = new User();
+			$user->get($args['iduser']);
 
-$app->get('/admin/users/{iduser:[0-9]+}/delete', function (Request $request, Response $response, array $args) {
-	User::verifyLogin();
+			$page = new PageAdmin();
+			$page->setTpl('users-password', [
+				'msgError' => ErrorHandler::getMsgError(),
+				'msgSuccess' => SuccessHandler::getMsgSuccess(),
+				'user' => $user->getValues()
+			]);
 
-	$user = new User();
-	$user->get($args['iduser']);
-	$user->delete();
+			return $response;
+		});
 
-	return $response->withHeader('Location', '/admin/users')->withStatus(302);
-});
+		// TODO: Refactor password validation and redirect
+		$subgroup->post('/password', function (Request $request, Response $response, array $args) {
+			User::verifyLogin();
+			$params = $request->getParsedBody();
+			$errorMsg = '';
 
-$app->get('/admin/users/{iduser:[0-9]+}/password', function (Request $request, Response $response, array $args) {
-	User::verifyLogin();
+			if (empty($params['despassword'])) {
+				$errorMsg = 'Digite a nova senha!';
+			} elseif (empty($params['despassword-confirm'])) {
+				$errorMsg = 'Confirme a nova senha!';
+			} elseif ($params['despassword-confirm'] !== $params['despassword']) {
+				$errorMsg = 'As senhas não coincidem!';
+			}
 
-	$user = new User();
-	$user->get($args['iduser']);
+			if (!empty($errorMsg)) {
+				return $response->withHeader('Location', "/admin/users/{$args['iduser']}/password")->withStatus(302);
+			}
 
-	$page = new PageAdmin();
-	$page->setTpl('users-password', [
-		'msgError' => ErrorHandler::getMsgError(),
-		'msgSuccess' => SuccessHandler::getMsgSuccess(),
-		'user' => $user->getValues()
-	]);
+			$user = new User();
+			$user->get($args['iduser']);
 
-	return $response;
-});
+			if (password_verify($params['despassword'], $user->getDespassword())) {
+				ErrorHandler::setMsgError('A sua nova senha deve ser diferente da atual!');
+				return $response->withHeader('Location', "/admin/users/{$args['iduser']}/password")->withStatus(302);
+			}
 
-// TODO: Refactor password validation and redirect
-$app->post('/admin/users/{iduser:[0-9]+}/password', function (Request $request, Response $response, array $args) {
-	User::verifyLogin();
-	$params = $request->getParsedBody();
-	$errorMsg = '';
+			$user->setDespassword($params['despassword']);
+			$user->update();
+			SuccessHandler::setMsgSuccess('Senha alterada com sucesso!');
 
-	if (empty($params['despassword'])) {
-        $errorMsg = 'Digite a nova senha!';
-    } elseif (empty($params['despassword-confirm'])) {
-        $errorMsg = 'Confirme a nova senha!';
-    } elseif ($params['despassword-confirm'] !== $params['despassword']) {
-        $errorMsg = 'As senhas não coincidem!';
-	}
+			return $response->withHeader('Location', "/admin/users/{$args['iduser']}/password")->withStatus(302);
+		});
 
-	if (!empty($errorMsg)) {
-		return $response->withHeader('Location', "/admin/users/{$args['iduser']}/password")->withStatus(302);
-	}
+		$subgroup->get('', function (Request $request, Response $response, array $args) {
+			User::verifyLogin();
 
-	$user = new User();
-	$user->get($args['iduser']);
+			$user = new User();
+			$user->get($args['iduser']);
 
-    if (password_verify($params['despassword'], $user->getDespassword())) {
-        ErrorHandler::setMsgError('A sua nova senha deve ser diferente da atual!');
-        return $response->withHeader('Location', "/admin/users/{$args['iduser']}/password")->withStatus(302);
-    }
+			$page = new PageAdmin();
+			$page->setTpl('users-update', ['user' => $user->getValues()]);
 
-    $user->setDespassword($params['despassword']);
-    $user->update();
-    SuccessHandler::setMsgSuccess('Senha alterada com sucesso!');
+			return $response;
+		});
 
-	return $response->withHeader('Location', "/admin/users/{$args['iduser']}/password")->withStatus(302);
-});
+		$subgroup->post('', function (Request $request, Response $response, array $args) {
+			User::verifyLogin();
+			$params = $request->getParsedBody();
 
-$app->get('/admin/users/create', function (Request $request, Response $response) {
-	User::verifyLogin();
-	$page = new PageAdmin();
-	$page->setTpl('users-create');
-	return $response;
-});
+			if (!isset($params['inadmin'])) {
+				$params['inadmin'] = 0;
+			}
 
-$app->post('/admin/users/create', function (Request $request, Response $response) {
-	User::verifyLogin();
-	$params = $request->getParsedBody();
+			$user = new User();
+			$user->get($args['iduser']);
+			$user->setData($params);
+			$user->update();
 
-	if (!isset($params['inadmin'])) {
-		$params['inadmin'] = 0;
-	}
+			return $response->withHeader('Location', '/admin/users')->withStatus(302);
+		});
+	});
 
-	$user = new User();
-	$user->setData($params);
-	$user->save();
+	$group->group('/create', function (RouteCollectorProxy $subgroup) {
+		$subgroup->get('', function (Request $request, Response $response) {
+			User::verifyLogin();
+			$page = new PageAdmin();
+			$page->setTpl('users-create');
+			return $response;
+		});
 
-	return $response->withHeader('Location', '/admin/users')->withStatus(302);
-});
+		$subgroup->post('', function (Request $request, Response $response) {
+			User::verifyLogin();
+			$params = $request->getParsedBody();
 
-$app->get('/admin/users/{iduser:[0-9]+}', function (Request $request, Response $response, array $args) {
-	User::verifyLogin();
+			if (!isset($params['inadmin'])) {
+				$params['inadmin'] = 0;
+			}
 
-	$user = new User();
-	$user->get($args['iduser']);
+			$user = new User();
+			$user->setData($params);
+			$user->save();
 
-	$page = new PageAdmin();
-	$page->setTpl('users-update', ['user' => $user->getValues()]);
+			return $response->withHeader('Location', '/admin/users')->withStatus(302);
+		});
+	});
 
-	return $response;
-});
+	$group->get('', function (Request $request, Response $response) {
+		User::verifyLogin();
+		$params = $request->getQueryParams();
 
-$app->post('/admin/users/{iduser:[0-9]+}', function (Request $request, Response $response, array $args) {
-	User::verifyLogin();
-	$params = $request->getParsedBody();
+		$search = (isset($params['search'])) ? htmlentities(trim(strip_tags($params['search'])), ENT_QUOTES) : '';
+		$page = (isset($params['page'])) ? (int) $params['page'] : 1;
+		$pagination = User::getPageSearch($search, $page);
+		$pages = [];
 
-	if (!isset($params['inadmin'])) {
-		$params['inadmin'] = 0;
-	}
+		for ($i = 1; $i <= $pagination['pages']; $i++) {
+			$pages[] = [
+				'href' => '/admin/users?' . http_build_query([
+					'page' => $i,
+					'search' => $search
+				]),
+				'text' => $i
+			];
+		}
 
-	$user = new User();
-	$user->get($args['iduser']);
-	$user->setData($params);
-	$user->update();
+		$page = new PageAdmin();
+		$page->setTpl('users', [
+			'users' => $pagination['data'],
+			'search' => $search,
+			'pages' => $pages
+		]);
 
-	return $response->withHeader('Location', '/admin/users')->withStatus(302);
-});
-
-$app->get('/admin/users', function (Request $request, Response $response) {
-	User::verifyLogin();
-	$params = $request->getQueryParams();
-
-	$search = (isset($params['search'])) ? htmlentities(trim(strip_tags($params['search'])), ENT_QUOTES) : '';
-	$page = (isset($params['page'])) ? (int) $params['page'] : 1;
-	$pagination = User::getPageSearch($search, $page);
-	$pages = [];
-
-	for ($i = 1; $i <= $pagination['pages']; $i++) {
-		$pages[] = [
-			'href' => '/admin/users?' . http_build_query([
-				'page' => $i,
-				'search' => $search
-			]),
-			'text' => $i
-		];
-	}
-
-	$page = new PageAdmin();
-	$page->setTpl('users', [
-		'users' => $pagination['data'],
-		'search' => $search,
-		'pages' => $pages
-	]);
-
-	return $response;
+		return $response;
+	});
 });

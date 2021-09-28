@@ -6,34 +6,37 @@ use Hcode\Model\User;
 use Hcode\Page;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
+use Slim\Routing\RouteCollectorProxy;
 
 ErrorHandler::create(User::ERROR);
 ErrorRegisterHandler::create(User::ERROR_REGISTER);
 
-$app->get('/login', function (Request $request, Response $response) {
-	$registerValues = $_SESSION['registerValues'] ?? [
-		'name' => '',
-		'email' => '',
-		'phone' => ''
-	];
-	$page = new Page();
-	$page->setTpl('login', [
-		'error' => ErrorHandler::getMsgError(),
-		'errorRegister' => ErrorRegisterHandler::getMsgError(),
-		'registerValues' => $registerValues
-	]);
-	return $response;
-});
+$app->group('/login', function (RouteCollectorProxy $group) {
+	$group->get('', function (Request $request, Response $response) {
+		$registerValues = $_SESSION['registerValues'] ?? [
+			'name' => '',
+			'email' => '',
+			'phone' => ''
+		];
+		$page = new Page();
+		$page->setTpl('login', [
+			'error' => ErrorHandler::getMsgError(),
+			'errorRegister' => ErrorRegisterHandler::getMsgError(),
+			'registerValues' => $registerValues
+		]);
+		return $response;
+	});
 
-$app->post('/login', function (Request $request, Response $response) {
-	try {
-		$params = $request->getParsedBody();
-		User::login($params['login'], $params['password']);
-	} catch (Exception $e) {
-		ErrorHandler::setMsgError($e->getMessage());
-	}
+	$group->post('', function (Request $request, Response $response) {
+		try {
+			$params = $request->getParsedBody();
+			User::login($params['login'], $params['password']);
+		} catch (Exception $e) {
+			ErrorHandler::setMsgError($e->getMessage());
+		}
 
-	return $response->withHeader('Location', '/checkout')->withStatus(302);
+		return $response->withHeader('Location', '/checkout')->withStatus(302);
+	});
 });
 
 $app->get('/logout', function (Request $request, Response $response) {
