@@ -1,6 +1,5 @@
 vendor/
 views-cache/
-res/site/img/products/
 views/categories-menu.html
 .env
 .env.backup
